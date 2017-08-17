@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!--<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">-->
+    <meta name="description" content="军装，换军装，人脸检测">
+    <meta name="author" content="iorichina">
+    <link rel="icon" href="favicon.ico">
+
+    <title>换军装</title>
+    <link href="//cdn.bootcss.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
+    <link href="//cdn.staticfile.org/webuploader/0.1.5/webuploader.css" rel="stylesheet">
+    <style type="text/css">
+    </style>
+</head>
+<body>
+<div class="container-fluid" style="width:550px">
+    <div class="upload_div">
+        <div id="upload_bt_id" style="display: inline"></div>
+        <span id="upload_bt_progress"></span>
+    </div>
+    <canvas id="canvas" width="446" height="694"></canvas>
+    <div style="display: none">
+        <img src="img/nanchang1-m-t.png" id="jz">
+        <img src="" id="target" style="max-width: 200px;">
+    </div>
+</div>
+
+<script src="//cdn.bootcss.com/jquery/3.2.1/jquery.min.js"></script>
+<script src="//cdn.bootcss.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+<script src="//cdn.staticfile.org/webuploader/0.1.5/webuploader.html5only.min.js"></script>
+<!--<script src="js/webuploader.html5only.js"></script>-->
+<script data-th-inline="javascript">
+    var from = "web-git";
+    var url_detect = "//112.74.170.19/hello/face/api/face/detect?from="+from;
+</script>
+<script>
+    function createFace(json) {
+        console.log("createFace("+JSON.stringify(json)+")")
+        var jzimg = $('#jz')[0];
+        var img = $('#target')[0];
+        var canvas = $('#canvas')[0];
+        var ctx = canvas.getContext('2d');
+
+        var sx = json.data.left,
+            sy = json.data.top,
+            swidth = json.data.width,
+            sheight = json.data.height;
+
+        ctx.drawImage(img, sx, sy, swidth, sheight, 169, 173, 121, 113);
+        console.log("$('#canvas')[0].getContext('2d').drawImage($('#target')[0], "+ sx+", "+sy+", "+ swidth+", "+ sheight+", "+ 169+", "+ 173+", "+ 121+", "+ 113+")")
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.drawImage(jzimg, 0, 0);
+        console.log("$('#canvas')[0].getContext('2d').drawImage($('#jz')[0], 0, 0)")
+
+        //globalCompositeOperation = 'source-over';
+        // 这个是用来把抠出来到人脸，合成到军装里到关键设置，
+        // 可以合成任意到图片，并保留图片到透明信息哦。
+        // 相当于ps里的图层叠加概念
+
+    };
+
+    function beforeSendFile(file) {
+        console.log('beforeSendFile', file)
+        if (!file) {
+            return;
+        }
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            var data = e.target.result; // 'data:image/jpeg;base64,/9j/4AAQSk...(base64编码)...'
+            $('#target').attr("src", data);
+        };
+//         以DataURL的形式读取文件:
+        reader.readAsDataURL(file.source.source);
+    }
+    var domId = 'upload_bt_id';
+
+    //给上传组件需要的参数赋值
+    var uploader = WebUploader.create({
+        pick: {
+            id: '#' + domId,
+            label: '选择2M以内图片',
+            multiple: false
+        },
+
+        accept: {
+            title: 'Images',
+            extensions: 'jpg,jpeg,png',
+            mimeTypes: 'image/*'
+        },
+
+        disableGlobalDnd: true,
+
+        // 压缩后没法预期得到新的尺寸
+        compress: false,
+        // runtimeOrder: 'flash',
+        auto: true,
+        server: url_detect,
+        fileSingleSizeLimit: 2 * 1024 * 1024    // 2 M
+    });
+
+    $("#"+domId).click(function () {
+        $("#upload_bt_progress").text('')
+    })
+
+    uploader.onUploadProgress = function (file, percentage) {
+        $("#upload_bt_progress").text(Math.ceil(percentage * 100) + '%');
+        if (percentage>=1){
+            $("#upload_bt_progress").text($("#upload_bt_progress").text()+'  正在进行人脸识别，请稍候')
+        }
+    };
+
+    uploader.onError = function (code) {
+        console.log('onError', code);
+        $("#upload_bt_progress").text()
+        if ('F_EXCEED_SIZE' == code) {
+            alert('图片太大了，目前只支持2M以内的图片')
+            return;
+        }
+        alert('Error: ' + code);
+    };
+
+    uploader.on('uploadError', function (file, reason) {
+        console.log('uploadError', file, reason);
+        alert('Error: ' + reason + ', 请刷新重试')
+    });
+
+    uploader.on('uploadSuccess', function (file, json) {
+        console.log('uploadSuccess', file, json);
+        if (json.code != 0){
+            alert(json.msg);
+            return;
+        }
+        createFace(json)
+    });
+
+    uploader.on('uploadComplete', function (file) {
+        console.log('uploadComplete', file);
+        $("#upload_bt_progress").text('')
+        uploader.reset()
+    });
+
+    uploader.on('uploadStart', function (file) {
+        console.log('uploadStart', file);
+        beforeSendFile(file)
+    });
+
+</script>
+</body>
+</html>
