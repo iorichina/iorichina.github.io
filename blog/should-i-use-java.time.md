@@ -1,5 +1,5 @@
 # 该不该接入java.time
-
+> 原文地址： https://github.com/iorichina/iorichina.github.io/blob/master/blog/should-i-use-java.time.md
 ## 摘要
 java8之前，我们都是使用自己或别人封装的时间处理方法，真正封装过时间处理方法的人就会知道，java8之前的原生日期时间处理API用起来还是很麻烦的；
 
@@ -10,7 +10,9 @@ java8之前，我们都是使用自己或别人封装的时间处理方法，真
 java.time又有哪些优点缺点？我们是否需要将自己的代码切换到java.time？
 
 ## 关键词
-java 日期时间API Date Calendar java.time
+| java1.8 | 日期时间API | Date | Calendar | java.time |
+| ------- | ----------- | ---- | -------- | --------- |
+
 
 ## 总结
 我的观点，新代码建议接入java.time，旧代码不改也不会影响性能、效率的情况下不建议特意改造为使用java.time。
@@ -85,6 +87,8 @@ LocalDateTime.now()
 应该都知道旧日期API里，星期天是第一天，一月时第0个月，网上搜到的相关评语都是：what the *！
 
 其实星期几是第一天这个我觉得还好，毕竟你看纸质的日历、windows 10之前的系统日历、苹果的日历，都是星期天作为每周的第一天，网上的评论更多是人云亦云，windows 10默认把星期一作为一周的第一天反而突然不习惯了！
+
+![java日期API对比](../img/java.time.png)
 
 月份这个，从0开始，跟其他的任何习惯都冲突，就真是反人类了。
 
