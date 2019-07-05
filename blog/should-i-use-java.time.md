@@ -1,4 +1,5 @@
 # 该不该接入java.time
+
 ## 摘要
 java8之前，我们都是使用自己或别人封装的时间处理方法，真正封装过时间处理方法的人就会知道，java8之前的原生日期时间处理API用起来还是很麻烦的；
 
@@ -18,6 +19,7 @@ java 日期时间API Date Calendar java.time
 ### 线程安全
 首先指出java.time的一点重要特性：All the classes are immutable and thread-safe.
 福音啊，不再需要为并发处理烦恼，这一点相信也是群众最高的呼声之一吧。
+
 对比以下代码你就知道：
 old 
 ```
@@ -43,9 +45,9 @@ public void test() {
 VS
 new 
 ```
+DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 @Test
 public void test() {
-	DateTimeFormatter formatter=DateTimeFormatter.ofPattern("yyyy-MM-ddHH:mm:ss");
 	long now=1562083200;
 	for(int i=0;i<10000;i++){
 		new Thread(()->{
@@ -63,18 +65,18 @@ public void test() {
 链式编程，代码简洁，可读性也更强，比如取昨天第一秒的时间戳 
 ```
 LocalDateTime.parse("2017-09-08 11:05:12", DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
-.minusDays(1)
-.truncatedTo(ChronoUnit.DAYS)
-.toEpochSecond(OffsetDateTime.now().getOffset())
+	.minusDays(1)
+	.truncatedTo(ChronoUnit.DAYS)
+	.toEpochSecond(OffsetDateTime.now().getOffset())
 ```
 、取这个月最后一纳秒的时间戳
 ```
 LocalDateTime.now()
-.with(TemporalAdjusters.firstDayOfMonth())
-.plusMonths(1)
-.truncatedTo(ChronoUnit.DAYS)
-.minusNanos(1)
-.toEpochSecond(OffsetDateTime.now().getOffset())
+	.with(TemporalAdjusters.firstDayOfMonth())
+	.plusMonths(1)
+	.truncatedTo(ChronoUnit.DAYS)
+	.minusNanos(1)
+	.toEpochSecond(OffsetDateTime.now().getOffset())
 ```
 
 从上面示例中其实也可以看到，日期时间的加、减、乘、除、格式化都还是挺方便的，简单易用。
