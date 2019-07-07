@@ -89,7 +89,7 @@ LocalDateTime.now()
 
 其实星期几是第一天这个我觉得还好，毕竟你看纸质的日历、windows 10之前的系统日历、苹果的日历，都是星期天作为每周的第一天，网上的评论更多是人云亦云，windows 10默认把星期一作为一周的第一天反而突然不习惯了！
 
-![java日期API对比](../img/java.time.png)
+![java日期API对比](should-i-use-java.time/java.time.png)
 
 月份这个，从0开始，跟其他的任何习惯都冲突，就真是反人类了。
 
