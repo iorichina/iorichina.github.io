@@ -36,6 +36,7 @@
 关键处理方法：内存操作；ngx_lua的shared_dict可以定义一个共享内存区域，所有nginx子进程均可以通过shared_dict分享数据，而且是内存操作，确保了即使是动态代理也有高性能；
 
 动态代理流程：
+
 ![动态代理流程](dynamic-proxy/s2.png)
 
 	- nginx配置初始化lua代码，请求服务发现，获取节点列表，存入shared_dict
