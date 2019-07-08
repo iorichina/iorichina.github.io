@@ -118,15 +118,21 @@ java.time的API也做得非常符合当前代码的“审美观”，使用方�
 所以java.time恶心的操作也“被优雅”了，比如取某个毫秒时间对应的当天第一毫秒：
 ```
 public static long getTimestampInDayFirstMilli(long timeInMillis) {
-        return timeInMillis - (LocalDateTime.now()
-			.truncatedTo(ChronoUnit.DAYS)
-			.atZone(ZoneId.systemDefault())
-			.toEpochSecond()
-			 * MILLIS_PER_SECOND)
-	;
-    }
+	return ZonedDateTime
+		.ofInstant(Instant.ofEpochMilli(timeInMillis), ZoneId.systemDefault())
+		.truncatedTo(ChronoUnit.DAYS)
+		.toInstant()
+		.toEpochMilli();
+}
+public static long getTimestampInDayFirstMillis(long timeInMillis) {
+	return LocalDateTime
+		.ofInstant(Instant.ofEpochMilli(timeInMillis), ZoneId.systemDefault())
+		.truncatedTo(ChronoUnit.DAYS)
+		.atZone(ZoneId.systemDefault())
+		.toEpochSecond() * MILLIS_PER_SECOND;
+}
 ```
-对于秒级的操作，java.time还算让人满意，但是一旦操作毫秒级或更小单位的时间戳，就显得很恶心了。
+对于秒级的操作，java.time还算让人满意，但是一旦操作毫秒级或更小单位的时间戳，就显得很恶心了，非得转来转去。
 
 ## 题外话
 ### 时区
