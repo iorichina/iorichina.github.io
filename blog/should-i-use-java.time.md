@@ -38,7 +38,8 @@ public void test() {
 	for(int i=0;i<10000;i++){
 		new Thread(()->{
 			int x=ThreadLocalRandom.current().nextInt(0,10);
-			long seconds=YEAR_MONTH_DATE_HH_MM_SS.get().parse("2019-07-03 00:00:0"+x).getTime() / 1000;
+			long seconds=YEAR_MONTH_DATE_HH_MM_SS.get()
+				.parse("2019-07-03 00:00:0"+x).getTime() / 1000;
 			Assert.assertEquals(now+x,seconds);
 		}).start();
 	}
@@ -55,7 +56,8 @@ public void test() {
 	for(int i=0;i<10000;i++){
 		new Thread(()->{
 			int x=ThreadLocalRandom.current().nextInt(0,10);
-			long seconds=LocalDateTime.parse("2019-07-03 00:00:0"+x,formatter).toEpochSecond(OffsetDateTime.now().getOffset());
+			long seconds=LocalDateTime.parse("2019-07-03 00:00:0"+x,formatter)
+			.toEpochSecond(OffsetDateTime.now().getOffset());
 			Assert.assertEquals(now+x,seconds);
 		}).start();
 	}
@@ -112,6 +114,19 @@ java.time的API也做得非常符合当前代码的“审美观”，使用方�
 
 ### 封装之后的代码都是优雅的
 前面也说到，很多操作都经过封装，JDK自身代码的“优雅”特性对使用者而言是透明的。
+
+所以java.time恶心的操作也“被优雅”了，比如取某个毫秒时间对应的当天第一毫秒：
+```
+public static long getTimestampInDayFirstMilli(long timeInMillis) {
+        return timeInMillis - (LocalDateTime.now()
+			.truncatedTo(ChronoUnit.DAYS)
+			.atZone(ZoneId.systemDefault())
+			.toEpochSecond()
+			 * MILLIS_PER_SECOND)
+	;
+    }
+```
+对于秒级的操作，java.time还算让人满意，但是一旦操作毫秒级或更小单位的时间戳，就显得很恶心了。
 
 ## 题外话
 ### 时区
