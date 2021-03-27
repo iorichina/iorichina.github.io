@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charSet="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, minimum-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge,chrome=1" />
+    <meta http-equiv="Cache-Control" content="no-siteapp" />
+    <meta http-equiv="Cache-Control" content="no-transform" />
+    <meta name="applicable-device" content="pc,mobile" />
+    <meta name="MobileOptimized" content="width" />
+    <meta name="HandheldFriendly" content="true" />
+    <meta name="theme-color" content="#ec7259" />
+    <meta name="renderer" content="webkit" />
+    <meta name="force-rendering" content="webkit" />
+
+</head>
+
+<body class="">
+
+    <canvas id="myCanvas" width="1000" height="1000"></canvas>
+
+    <script type="text/javascript">
+
+        var canvas = document.getElementById('myCanvas');
+        var ctx = canvas.getContext('2d');
+        var centerX = 100;
+        var centerY = 100;
+        var R = 100;
+
+        // ctx.fillStyle = '#FF0000';
+        ctx.fillRect(0, 0, centerX * 2, centerY * 2);
+
+
+        // 开始绘制圆圈
+        ctx.beginPath();
+        // ctx.lineWidth = 1;
+        ctx.fillStyle = 'blue';
+        // 绘制圆的路径**
+        ctx.arc(centerX, centerY, R, 0, Math.PI * 2, false);
+        // 0°是从三点钟方向开始的
+        // 描边路径
+        ctx.fill();
+
+        // 开始绘制点
+        for (let index = 0; index < 100; index++) {
+            let theta = Math.random();//(0-1)
+            //坐标
+            let x = centerX + R * Math.cos(theta * 2 * Math.PI)
+            let y = centerY + R * Math.sin(theta * 2 * Math.PI)
+
+            ctx.beginPath();
+            ctx.fillStyle = 'red';
+            // 绘制圆的路径**
+            ctx.arc(x, y, 1, 0, Math.PI * 2, false);
+            // 0°是从三点钟方向开始的
+            // 描边路径
+            ctx.fill();
+        }
+
+    </script>
+</body>
+
+</html>
