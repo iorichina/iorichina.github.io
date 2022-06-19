@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<title>小车控制</title>
+	<style type=text/css>
+		* {
+			margin: 0;
+			padding: 0;
+		}
+		
+		html,
+		body {
+			height: 100%;
+			font-family: sans-serif;
+			text-align: center;
+			background: #444d44;
+		}
+		
+		#content {
+			position: absolute;
+			top: 0;
+			right: 0;
+			bottom: 0;
+			left: 0;
+			/* width: 320px; */
+			/* height: 480px; */
+			margin: auto;
+		}
+	</style>
+    <style type="text/css">
+        #vvv {
+            margin: auto;
+        }
+        .box {
+            /* width: 400px; */
+            /* height: 100px; */
+            text-align: center;
+            margin: 10px auto;
+        }
+ 
+        .box p {
+            background: pink;
+        }
+        /* 向上箭头 */
+        .to_top {
+            width: 0;
+            height: 0;
+            border-bottom: 60px solid #f0f;
+            border-left: 60px solid transparent;
+            border-right: 60px solid transparent;
+        }
+        /* 向左箭头 */
+        .to_left {
+            width: 0;
+            height: 0;
+            border-right: 60px solid #ffd900;
+            border-top: 60px solid transparent;
+            border-bottom: 60px solid transparent;
+        }
+        /* 向右箭头 */
+        .to_right {
+            width: 0;
+            height: 0;
+            border-left: 60px solid greenyellow;
+            border-top: 60px solid transparent;
+            border-bottom: 60px solid transparent;
+        }
+        /* 向下箭头 */
+        .to_bottom {
+            width: 0;
+            height: 0;
+            border-top: 60px solid skyblue;
+            border-left: 60px solid transparent;
+            border-right: 60px solid transparent;
+        }
+        #ctl_go_main {
+            align-content: center;
+        }
+        #ctl_go {
+            width: 120px;
+            height: 60px;
+            margin: auto;
+            margin-bottom: 30px;
+        }
+        #ctl_left {
+            height: 60px;
+            float: left;
+            margin-left: 30px;
+        }
+        #ctl_right {
+            height: 60px;
+            float: right;
+            margin-right: 30px;
+        }
+        #ctl_back {
+            width: 30px;
+            height: 30px;
+            position: relative;
+        }
+    </style>
+</head>
+
+<body>
+	<div id=content>
+        <div id="vvv">
+            <!-- <img id="stream" src="http://192.168.155.238:81/stream"> -->
+        </div>
+        <div id="ctl">
+            <div class="box">
+                <div id="ctl_go_main">
+                    <div id="ctl_go">
+                        <div class="to_top"></div>
+                    </div>
+                </div>
+                <div id="ctl_min">
+                    <div id="ctl_left">
+                        <div class="to_left"></div>
+                    </div>
+                    <div id="ctl_right">
+                        <div class="to_right"></div>
+                    </div>
+                </div>
+                <div id="ctl_back" style="display: none;">
+                    <div class="to_bottom"></div>
+                </div>
+            </div>
+        </div>
+	</div>
+	<script>
+		var $ = function (selector) { return document.querySelector(selector); };
+		
+		$.urlParam = function (name) {
+			var results = new RegExp('[\?&]' + name + '=([^&#]*)').exec(window.location.href);
+			if (results == null) { return null;}
+			else { return decodeURI(results[1]) || 0;}
+		}
+		function show(f, y) {
+			if (y == null) y = f;
+			$(f).style.display = y == f ? 'block' : 'none';
+		}
+		function hide(f) {
+			$(f).style.display = 'none';
+		}
+		function fetch(url, method, callback, time_out) {
+			var xhr = new XMLHttpRequest();
+			xhr.onloadend = function () {
+				callback(xhr.status, xhr.responseText);
+			}
+			xhr.ontimeout = function () {
+				callback(-1, null);
+			}
+			xhr.open(method, url, true);
+			xhr.setRequestHeader('Accept', 'application/json');
+			xhr.timeout = (time_out || 10) * 1000;
+			xhr.send();
+		}
+        function tcpSocket(url) {
+            let connection = new WebSocket(url);
+            connection.onerror = function(event) {
+                console.error('WebSocket error: ', event);
+            }
+            connection.onopen = function(event) {
+                console.warn(event)
+            }
+            connection.onmessage = function(event) {
+                console.info(event)
+            }
+            connection.onclose = function() {
+                console.warn("连接关闭")
+            }
+            return connection
+        }
+        var ws
+        var timer
+        var timeout
+        var url
+        url = 'ws://121.40.165.18:8800/'
+        url = 'ws://192.168.155.254:9999/'
+		window.onload = function() {
+			ws = tcpSocket(url)
+            console.log("connecting to " + url)
+		}
+        let intervalMillis = 1000
+        $(".to_top").ontouchstart = function(evt) {
+            if (ws.readyState == 1) {
+                clearTimeout(timeout)
+                ws.send("go")
+                console.log("go")
+                timer = setInterval(function(){ws.send("go");console.log("go");}, intervalMillis);
+            }
+        }
+        $(".to_top").ontouchend = function(evt) {
+            if (ws.readyState == 1) {
+                timeout = setTimeout(function(){
+                    ws.send("stop")
+                    console.warn("stop")
+                    clearInterval(timer)
+                }, 1500)
+            }
+        }
+        $(".to_left").ontouchstart = function(evt) {
+            if (ws.readyState == 1) {
+                clearTimeout(timeout)
+                ws.send("left")
+                console.log("left")
+                timer = setInterval(function(){ws.send("left");console.log("left");}, intervalMillis);
+            }
+        }
+        $(".to_left").ontouchend = function(evt) {
+            if (ws.readyState == 1) {
+                timeout = setTimeout(function(){
+                    ws.send("stop")
+                    console.warn("stop")
+                    clearInterval(timer)
+                }, 1500)
+            }
+        }
+        $(".to_right").ontouchstart = function(evt) {
+            if (ws.readyState == 1) {
+                clearTimeout(timeout)
+                ws.send("right")
+                console.log("right")
+                timer = setInterval(function(){ws.send("right");console.log("right");}, intervalMillis);
+            }
+        }
+        $(".to_right").ontouchend = function(evt) {
+            if (ws.readyState == 1) {
+                timeout = setTimeout(function(){
+                    ws.send("stop")
+                    console.warn("stop")
+                    clearInterval(timer)
+                }, 1500)
+            }
+        }
+  </script>
+</body>
+
+</html>
