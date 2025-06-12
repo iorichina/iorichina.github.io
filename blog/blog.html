@@ -1,0 +1,42 @@
+<!DOCTYPE HTML>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+    <title>Blog</title>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    <script src="../js/marked.min.js"></script>
+    <link rel="stylesheet" href="../css/github-markdown.min.css">
+    <style>
+        .markdown-body {
+            box-sizing: border-box;
+            min-width: 200px;
+            max-width: 980px;
+            margin: 0 auto;
+            padding: 45px;
+        }
+    </style>
+</head>
+<body class="markdown-body">
+    <div id="content"></div>
+    <script>
+        // 从URL参数中获取markdown文件路径
+        const urlParams = new URLSearchParams(window.location.search);
+        const mdUrl = urlParams.get('md');
+
+        if (mdUrl) {
+            // 读取markdown文件
+            fetch(mdUrl)
+                .then(response => response.text())
+                .then(markdown => {
+                    // 将markdown转换为HTML并插入到页面中
+                    document.getElementById('content').innerHTML = marked.parse(markdown);
+                })
+                .catch(error => {
+                    console.error('Error loading markdown file:', error);
+                    document.getElementById('content').innerHTML = `<p>Error loading markdown file: ${error.message}</p>`;
+                });
+        } else {
+            document.getElementById('content').innerHTML = '<p>Please provide a markdown file URL using the "md" parameter</p>';
+        }
+    </script>
+</body>
+</html>
