@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>Microsoft Windows</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 40px; background: #f7f7f7; }
+    .container { background: #fff; padding: 24px; border-radius: 8px; box-shadow: 0 2px 8px #0001; max-width: 500px; margin: auto; }
+    label, select, button { font-size: 1rem; margin: 8px 0; }
+    video { width: 100%; margin-top: 16px; border-radius: 4px; background: #222; }
+    .actions { margin-top: 16px; }
+    a { display: inline-block; margin-top: 12px; }
+    #segments video { margin-top: 8px; }
+    #preview { margin-bottom: 16px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>屏幕录制工具</h2>
+    <p style="color:#666;font-size:0.98em;">选择“浏览器标签页”后，点击“开始录制”，可在弹窗中选择任意标签页进行录制。<br>录制时每隔指定时长自动分段保存，适合长时间录制。<br><b>Tips：</b>录制标签页过程中没有移动过鼠标，鼠标不会出现在视频中。<br><b>快捷键：</b>录制标签页时可按 <b>Ctrl + w</b> 可立即结束录制，或者在当前标签页中按 <b>Ctrl + Alt + 0</b> 快速结束录制。</p>
+    <label for="recordType">选择录制类型：</label>
+    <select id="recordType">
+      <option value="screen">桌面</option>
+      <option value="window">窗口</option>
+      <option value="tab">浏览器标签页</option>
+    </select>
+    <br>
+    <label for="segmentDuration">分段时长（分钟）：</label>
+    <input type="number" id="segmentDuration" min="1" max="180" value="120" style="width:60px;"> 
+    <span style="color:#888;font-size:0.95em;">（1-180，默认120分钟）</span>
+    <div>
+      <label><input type="checkbox" id="micEnable" checked> 同时录制麦克风声音</label>
+    </div>
+    <div class="actions">
+      <button id="startBtn">开始录制</button>
+      <button id="stopBtn" disabled>停止录制</button>
+    </div>
+    <video id="preview" controls autoplay muted></video>
+    <a id="downloadLink" style="display:none;">下载录制视频</a>
+    <div id="segments"></div>
+  </div>
+  <script>
+    const startBtn = document.getElementById('startBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const preview = document.getElementById('preview');
+    const downloadLink = document.getElementById('downloadLink');
+    const recordType = document.getElementById('recordType');
+    const micEnable = document.getElementById('micEnable');
+    let mediaRecorder;
+    let recordedChunks = [];
+    let stream;
+    let segmentIndex = 1;
+    const segmentsDiv = document.getElementById('segments');
+    const segmentDurationInput = document.getElementById('segmentDuration');
+    let segmentTimer = null;
+    let isRecording = false;
+
+    startBtn.onclick = async () => {
+      startBtn.disabled = true;
+      stopBtn.disabled = false;
+      downloadLink.style.display = 'none';
+      segmentsDiv.innerHTML = '';
+      recordedChunks = [];
+      segmentIndex = 1;
+      let options = { video: true, audio: true };
+      let segmentDuration = parseInt(segmentDurationInput.value, 10);
+      if (isNaN(segmentDuration) || segmentDuration < 1 || segmentDuration > 180) segmentDuration = 120;
+      const timesliceMs = segmentDuration * 60 * 1000;
+      try {
+        if (recordType.value === 'screen') {
+          options = { video: { displaySurface: 'monitor' }, audio: true };
+        } else if (recordType.value === 'window') {
+          options = { video: { displaySurface: 'window' }, audio: true };
+        } else if (recordType.value === 'tab') {
+          options = { video: { displaySurface: 'browser' }, audio: true };
+        }
+        // 获取屏幕流
+        const displayStream = await navigator.mediaDevices.getDisplayMedia(options);
+        // 获取麦克风流
+        let micStream = null;
+        if (micEnable.checked) {
+          try {
+            micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          } catch (micErr) {
+            alert('无法获取麦克风音频，将只录制系统声音。');
+          }
+        }
+        // 合并音轨和视频轨道（音频混流）
+        const videoTracks = displayStream.getVideoTracks();
+        let mixedStream;
+        if (micEnable.checked && micStream && micStream.getAudioTracks().length > 0) {
+          // 创建音频上下文
+          const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+          const destination = audioContext.createMediaStreamDestination();
+          // 系统音频
+          if (displayStream.getAudioTracks().length > 0) {
+            const sysSource = audioContext.createMediaStreamSource(new MediaStream(displayStream.getAudioTracks()));
+            sysSource.connect(destination);
+          }
+          // 麦克风音频
+          const micSource = audioContext.createMediaStreamSource(micStream);
+          micSource.connect(destination);
+          // 合成最终流
+          mixedStream = new MediaStream([
+            ...videoTracks,
+            ...destination.stream.getAudioTracks()
+          ]);
+        } else {
+          // 只录系统音频
+          mixedStream = new MediaStream([
+            ...videoTracks,
+            ...displayStream.getAudioTracks()
+          ]);
+        }
+        stream = mixedStream;
+        preview.srcObject = stream;
+        const handleStreamEnded = () => {
+          if (!stopBtn.disabled) stopBtn.click();
+        };
+        displayStream.addEventListener('inactive', handleStreamEnded);
+        if (videoTracks.length > 0) {
+          videoTracks[0].addEventListener('ended', handleStreamEnded);
+        }
+        // 监听麦克风音轨断开
+        // if (micStream && micStream.getAudioTracks().length > 0) {
+        //   micStream.getAudioTracks().forEach(track => {
+        //     track.addEventListener('ended', handleStreamEnded);
+        //   });
+        // }
+        mediaRecorder = new MediaRecorder(stream);
+        mediaRecorder.ondataavailable = (e) => {
+          if (e.data.size > 0) {
+            const blob = new Blob([e.data], { type: 'video/webm' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            const segmentTime = new Date().toLocaleDateString().replaceAll("/","-");
+            a.href = url;
+            a.download = `segment_${segmentTime}_${segmentIndex}.webm`;
+            a.textContent = `下载分段视频 ${segmentIndex}`;
+            a.style.display = 'block';
+            a.style.marginTop = '8px';
+            const segmentPreview = document.createElement('video');
+            segmentPreview.controls = true;
+            segmentPreview.src = url;
+            segmentPreview.style.width = '100%';
+            segmentPreview.style.marginTop = '8px';
+            const div = document.createElement('div');
+            div.appendChild(a);
+            div.appendChild(segmentPreview);
+            segmentsDiv.appendChild(div);
+            segmentIndex++;
+          }
+        };
+        mediaRecorder.onstop = () => {
+          // 如果还在录制状态，自动开始下一段
+          if (isRecording) {
+            mediaRecorder.start();
+            segmentTimer = setTimeout(() => {
+              if (mediaRecorder && mediaRecorder.state === 'recording') {
+                mediaRecorder.stop();
+              }
+            }, timesliceMs);
+          }
+        };
+        isRecording = true;
+        mediaRecorder.start();
+        segmentTimer = setTimeout(() => {
+          if (mediaRecorder && mediaRecorder.state === 'recording') {
+            mediaRecorder.stop();
+          }
+        }, timesliceMs);
+      } catch (err) {
+        alert('录制失败: ' + err.message);
+        startBtn.disabled = false;
+        stopBtn.disabled = true;
+      }
+    };
+
+    stopBtn.onclick = () => {
+      stopBtn.disabled = true;
+      startBtn.disabled = false;
+      isRecording = false;
+      if (segmentTimer) {
+        clearTimeout(segmentTimer);
+        segmentTimer = null;
+      }
+      if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+        mediaRecorder.stop();
+      }
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+      }
+    };
+
+    // 快捷键结束录制
+    document.addEventListener('keydown', function(e) {
+      if (e.ctrlKey && e.altKey && e.code === 'Digit0') {
+        if (!stopBtn.disabled) {
+          stopBtn.click();
+        }
+      }
+    });
+  </script>
+</body>
+</html>
